@@ -19,6 +19,7 @@ class QuiltingGridPlanner {
         this.pasteOffset = { x: 0, y: 0 };
         this.mousePos = null;
         this.showPreview = false;
+        this.justFinishedSelection = false;
         
         this.grid = this.initializeGrid();
         this.setupEventListeners();
@@ -175,18 +176,43 @@ class QuiltingGridPlanner {
         const rect = this.canvas.getBoundingClientRect();
         const x = Math.floor((e.clientX - rect.left) / this.cellSize);
         const y = Math.floor((e.clientY - rect.top) / this.cellSize);
+        
+        // Only log when using select tool to reduce noise
+        if (this.currentTool === 'select') {
+            console.log('Mouse event:', {
+                clientX: e.clientX,
+                clientY: e.clientY,
+                rectLeft: rect.left,
+                rectTop: rect.top,
+                cellSize: this.cellSize,
+                calculatedX: x,
+                calculatedY: y
+            });
+        }
+        
         return { x, y };
     }
 
     handleMouseDown(e) {
         const cell = this.getCellFromMouseEvent(e);
+        console.log('handleMouseDown - cell:', cell, 'currentTool:', this.currentTool);
         
         if (this.currentTool === 'select') {
-            this.isSelecting = true;
-            this.selectionStart = cell;
-            this.selectionEnd = cell;
+            console.log('=== SELECTION STARTING ===');
             // Clear previous selection when starting new one
             this.clearSelection();
+            this.isSelecting = true;
+            // Create new objects to avoid reference issues
+            this.selectionStart = { x: cell.x, y: cell.y };
+            this.selectionEnd = { x: cell.x, y: cell.y };
+            console.log('Selection started:', { 
+                isSelecting: this.isSelecting, 
+                start: this.selectionStart, 
+                end: this.selectionEnd,
+                cellX: cell.x,
+                cellY: cell.y
+            });
+            this.drawGrid(); // Redraw to show selection start
         } else if (this.isPasting) {
             this.pasteSelection(cell);
         } else {
@@ -200,8 +226,9 @@ class QuiltingGridPlanner {
         this.mousePos = cell;
         
         if (this.isSelecting && this.selectionStart) {
-            this.selectionEnd = cell;
+            this.selectionEnd = { x: cell.x, y: cell.y };
             this.updateSelection();
+            console.log('Selection updated:', { isSelecting: this.isSelecting, start: this.selectionStart, end: this.selectionEnd });
         }
         
         this.drawGrid();
@@ -210,14 +237,29 @@ class QuiltingGridPlanner {
     handleMouseUp(e) {
         if (this.isSelecting) {
             this.isSelecting = false;
+            this.justFinishedSelection = true; // Prevent click event from interfering
+            // Finalize the selection
+            this.updateSelection();
             this.updateSelectionButtons();
+            console.log('Selection finalized:', { 
+                selectedCells: this.selectedCells.size,
+                cells: Array.from(this.selectedCells)
+            });
         }
     }
 
     handleClick(e) {
         // Prevent default to avoid conflicts with mousedown
         e.preventDefault();
-        // Click handling is now done in mousedown for better responsiveness
+        
+        // Handle single-click selection only if we didn't just finish a drag selection
+        if (this.currentTool === 'select' && !this.isSelecting && !this.justFinishedSelection) {
+            const cell = this.getCellFromMouseEvent(e);
+            this.selectSingleCell(cell.x, cell.y);
+        }
+        
+        // Reset the flag after handling the click
+        this.justFinishedSelection = false;
     }
 
     fillCell(x, y) {
@@ -267,8 +309,11 @@ class QuiltingGridPlanner {
             this.grid[y][x].selected = false;
         });
         this.selectedCells.clear();
-        this.selectionStart = null;
-        this.selectionEnd = null;
+        // Only clear selection start/end if we're not currently selecting
+        if (!this.isSelecting) {
+            this.selectionStart = null;
+            this.selectionEnd = null;
+        }
         this.updateSelectionButtons();
         this.drawGrid();
     }
@@ -294,7 +339,10 @@ class QuiltingGridPlanner {
             const [x, y] = cellKey.split(',').map(Number);
             selectionData.cells.push({
                 x, y,
-                data: { ...this.grid[y][x] }
+                data: {
+                    elements: [...this.grid[y][x].elements], // Deep copy elements array
+                    selected: false
+                }
             });
             selectionData.bounds.minX = Math.min(selectionData.bounds.minX, x);
             selectionData.bounds.maxX = Math.max(selectionData.bounds.maxX, x);
@@ -304,6 +352,7 @@ class QuiltingGridPlanner {
 
         this.copiedSelection = selectionData;
         this.updateSelectionButtons();
+        console.log('Copied selection:', selectionData);
     }
 
     rotateSelection() {
@@ -318,7 +367,10 @@ class QuiltingGridPlanner {
             const [x, y] = cellKey.split(',').map(Number);
             selectionData.cells.push({
                 x, y,
-                data: { ...this.grid[y][x] }
+                data: {
+                    elements: [...this.grid[y][x].elements], // Deep copy elements array
+                    selected: false
+                }
             });
             selectionData.bounds.minX = Math.min(selectionData.bounds.minX, x);
             selectionData.bounds.maxX = Math.max(selectionData.bounds.maxX, x);
@@ -341,11 +393,12 @@ class QuiltingGridPlanner {
             const newY = Math.round(centerY + relativeX);
 
             if (newX >= 0 && newX < this.gridWidth && newY >= 0 && newY < this.gridHeight) {
-                this.grid[newY][newX] = { ...cell.data, selected: false };
+                this.grid[newY][newX] = { ...cell.data };
             }
         });
 
         this.drawGrid();
+        console.log('Rotated selection');
     }
 
     startPasting() {
@@ -365,13 +418,15 @@ class QuiltingGridPlanner {
             const newY = cell.y + offsetY;
 
             if (newX >= 0 && newX < this.gridWidth && newY >= 0 && newY < this.gridHeight) {
-                this.grid[newY][newX] = { ...cell.data, selected: false };
+                // Replace the entire cell with the copied data
+                this.grid[newY][newX] = { ...cell.data };
             }
         });
 
         this.isPasting = false;
         this.canvas.style.cursor = 'crosshair';
         this.drawGrid();
+        console.log('Pasted selection at:', targetCell);
     }
 
     clearGrid() {
@@ -383,6 +438,20 @@ class QuiltingGridPlanner {
     clearCell(x, y) {
         if (x < 0 || x >= this.gridWidth || y < 0 || y >= this.gridHeight) return;
         this.grid[y][x].elements = [];
+        this.drawGrid();
+    }
+
+    selectSingleCell(x, y) {
+        if (x < 0 || x >= this.gridWidth || y < 0 || y >= this.gridHeight) return;
+        
+        // Clear previous selection
+        this.clearSelection();
+        
+        // Select single cell
+        this.selectedCells.add(`${x},${y}`);
+        this.grid[y][x].selected = true;
+        
+        this.updateSelectionButtons();
         this.drawGrid();
     }
 
@@ -474,6 +543,43 @@ class QuiltingGridPlanner {
                 const [x, y] = cellKey.split(',').map(Number);
                 this.ctx.fillRect(x * this.cellSize, y * this.cellSize, this.cellSize, this.cellSize);
             });
+        }
+
+        // Draw selection rectangle while dragging OR when we have a finalized selection
+        const shouldDrawSelection = (this.isSelecting && this.selectionStart && this.selectionEnd) || 
+            (this.selectedCells.size > 0 && this.selectionStart && this.selectionEnd);
+        
+        console.log('Selection drawing check:', {
+            isSelecting: this.isSelecting,
+            selectedCellsSize: this.selectedCells.size,
+            selectionStart: this.selectionStart,
+            selectionEnd: this.selectionEnd,
+            shouldDrawSelection: shouldDrawSelection
+        });
+        
+        if (shouldDrawSelection) {
+            const startX = Math.min(this.selectionStart.x, this.selectionEnd.x);
+            const endX = Math.max(this.selectionStart.x, this.selectionEnd.x);
+            const startY = Math.min(this.selectionStart.y, this.selectionEnd.y);
+            const endY = Math.max(this.selectionStart.y, this.selectionEnd.y);
+            
+            const rectX = startX * this.cellSize;
+            const rectY = startY * this.cellSize;
+            const rectWidth = (endX - startX + 1) * this.cellSize;
+            const rectHeight = (endY - startY + 1) * this.cellSize;
+            
+            // Fill with semi-transparent color first
+            this.ctx.fillStyle = 'rgba(102, 126, 234, 0.4)';
+            this.ctx.fillRect(rectX, rectY, rectWidth, rectHeight);
+            
+            // Draw selection rectangle border
+            this.ctx.strokeStyle = '#ff0000'; // Make it red for visibility
+            this.ctx.lineWidth = 3;
+            this.ctx.setLineDash([8, 4]);
+            this.ctx.strokeRect(rectX, rectY, rectWidth, rectHeight);
+            this.ctx.setLineDash([]);
+            
+            console.log('Drawing selection rectangle:', { rectX, rectY, rectWidth, rectHeight });
         }
 
         // Draw mouseover preview
@@ -594,12 +700,7 @@ class QuiltingGridPlanner {
         
         // Don't show preview if we're selecting or pasting
         if (this.currentTool === 'select' || this.isPasting) {
-            if (this.currentTool === 'select') {
-                // Show selection preview
-                this.ctx.fillStyle = 'rgba(102, 126, 234, 0.2)';
-                this.ctx.fillRect(cellX, cellY, this.cellSize, this.cellSize);
-            }
-            return;
+            return; // Selection rectangle is drawn in drawGrid
         }
 
         // Show clear preview
