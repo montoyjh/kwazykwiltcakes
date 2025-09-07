@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quilting Grid Planner</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>Quilting Grid Planner</h1>
+            <div class="controls">
+                <div class="control-group">
+                    <label for="grid-width">Width:</label>
+                    <input type="number" id="grid-width" value="20" min="5" max="100">
+                </div>
+                <div class="control-group">
+                    <label for="grid-height">Height:</label>
+                    <input type="number" id="grid-height" value="20" min="5" max="100">
+                </div>
+                <button id="resize-grid">Resize Grid</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="toolbar">
+                <div class="tool-section">
+                    <h3>Fill Tools</h3>
+                    <div class="tool-buttons">
+                        <button class="tool-btn active" data-tool="whole-square">Whole Square</button>
+                        <button class="tool-btn" data-tool="half-square">Half Square</button>
+                        <button class="tool-btn" data-tool="third-square">Third Square</button>
+                        <button class="tool-btn" data-tool="whole-triangle">Whole Triangle</button>
+                        <button class="tool-btn" data-tool="half-triangle">Half Triangle</button>
+                        <button class="tool-btn" data-tool="third-triangle">Third Triangle</button>
+                        <button class="tool-btn" data-tool="clear-cell">Clear Cell</button>
+                    </div>
+                </div>
+
+                <div class="tool-section">
+                    <h3>Rotation</h3>
+                    <div class="tool-buttons horizontal">
+                        <button class="tool-btn active" id="rotate-0" data-rotation="0">0°</button>
+                        <button class="tool-btn" id="rotate-90" data-rotation="90">90°</button>
+                        <button class="tool-btn" id="rotate-180" data-rotation="180">180°</button>
+                        <button class="tool-btn" id="rotate-270" data-rotation="270">270°</button>
+                    </div>
+                </div>
+
+                <div class="tool-section">
+                    <h3>Position</h3>
+                    <div class="tool-buttons">
+                        <div class="tool-buttons horizontal">
+                            <button class="tool-btn active" id="pos-top-left" data-position="top-left">TL</button>
+                            <button class="tool-btn" id="pos-top-right" data-position="top-right">TR</button>
+                        </div>
+                        <div class="tool-buttons horizontal">
+                            <button class="tool-btn" id="pos-bottom-left" data-position="bottom-left">BL</button>
+                            <button class="tool-btn" id="pos-bottom-right" data-position="bottom-right">BR</button>
+                        </div>
+                        <button class="tool-btn" id="pos-center" data-position="center">Center</button>
+                    </div>
+                </div>
+
+                <div class="tool-section">
+                    <h3>Colors & Patterns</h3>
+                    <div class="color-picker">
+                        <input type="color" id="color-input" value="#ff6b6b">
+                        <input type="file" id="pattern-input" accept="image/*" style="display: none;">
+                        <button id="upload-pattern">Upload Pattern</button>
+                    </div>
+                    <div class="pattern-preview" id="pattern-preview"></div>
+                </div>
+
+                <div class="tool-section">
+                    <h3>Selection Tools</h3>
+                    <div class="tool-buttons">
+                        <button class="tool-btn" data-tool="select">Select</button>
+                        <button class="tool-btn" id="copy-selection" disabled>Copy</button>
+                        <button class="tool-btn" id="rotate-selection" disabled>Rotate</button>
+                        <button class="tool-btn" id="paste-selection" disabled>Paste</button>
+                        <button class="tool-btn" id="clear-selection">Clear</button>
+                    </div>
+                </div>
+
+                <div class="tool-section">
+                    <h3>Actions</h3>
+                    <div class="tool-buttons">
+                        <button id="clear-grid">Clear Grid</button>
+                        <button id="save-design">Save Design</button>
+                        <button id="load-design">Load Design</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-container">
+                <canvas id="grid-canvas" width="800" height="800"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+

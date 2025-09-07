@@ -1,0 +1,17 @@
+{
+  "name": "quilting-grid-planner",
+  "version": "1.0.0",
+  "description": "A web app for planning quilting designs on a customizable grid",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx http-server . -p 3000 -o",
+    "dev": "npx http-server . -p 3000 -o"
+  },
+  "keywords": ["quilting", "grid", "design", "planning", "web-app"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
+
