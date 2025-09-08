@@ -262,7 +262,7 @@ class QuiltingGridPlanner {
             this.justFinishedSelection = true; // Prevent click event from interfering
             // Finalize the selection
             this.updateSelection();
-            this.updateSelectionButtons()e
+            this.updateSelectionButtons();
             console.log('Selection finalized:', { 
                 selectedCells: this.selectedCells.size,
                 cells: Array.from(this.selectedCells)
