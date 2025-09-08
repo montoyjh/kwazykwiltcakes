@@ -1,80 +1,106 @@
-# Quilting Grid Planner
+# 🧵 Quilting Grid Planner
 
-A modern web application for planning quilting designs on a customizable grid. Create beautiful quilt patterns with various fill types, colors, and patterns.
+A beautiful, interactive web application for planning quilting designs on a customizable grid. Create stunning quilt patterns with precision and ease!
 
-## Features
+## ✨ Features
 
-- **Customizable Grid**: Adjust grid width and height (5-100 squares)
-- **Multiple Fill Types**:
-  - Whole square
-  - Half square
-  - Third square
-  - Half triangle
-  - Third triangle
-- **Color & Pattern Support**: Use solid colors or upload custom patterns
-- **Selection Tools**: Select, copy, rotate, and paste grid sections
-- **Save/Load**: Export and import your designs as JSON files
+### 🎨 **Design Tools**
+- **Customizable Grid**: Adjustable grid size for any project
+- **Multiple Shapes**: Whole squares, half squares, third squares, triangles
+- **ROYGBIV Colors**: Quick color cycling through rainbow palette
+- **Pattern Upload**: Upload custom fabric patterns
+- **Rotation & Position**: Precise control over shape placement
 
-## Installation
+### 🖱️ **Selection & Manipulation**
+- **Area Selection**: Click and drag to select multiple cells
+- **Copy & Paste**: Duplicate sections across your design
+- **Rotation**: Rotate selected areas in 90° increments
+- **Multi-layer**: Place multiple shapes in the same cell
 
-1. Clone or download this repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+### ⌨️ **Keyboard Shortcuts**
+- **Cmd+S**: Toggle selection mode
+- **Cmd+C**: Copy selection
+- **Cmd+V**: Paste selection
+- **Cmd+R**: Rotate selection
+- **R**: Cycle rotations
+- **S**: Cycle shapes
+- **C**: Cycle ROYGBIV colors
 
-## Usage
+## 🚀 Live Demo
 
-1. Start the development server:
-   ```bash
-   npm start
-   ```
-   This will open the app in your browser at `http://localhost:3000`
+**[Try it now!](https://yourusername.github.io/quilting-grid-planner)** *(Replace with your actual GitHub Pages URL)*
 
-2. **Customize Grid Size**:
-   - Use the width and height controls in the header
-   - Click "Resize Grid" to apply changes
+## 🛠️ Installation & Setup
 
-3. **Choose Fill Tool**:
-   - Select from whole square, half square, third square, half triangle, or third triangle
-   - Click on the grid to fill cells
+### Local Development
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/quilting-grid-planner.git
+cd quilting-grid-planner
 
-4. **Add Colors & Patterns**:
-   - Use the color picker for solid colors
-   - Click "Upload Pattern" to use custom images
+# Install dependencies
+npm install
 
-5. **Selection Tools**:
-   - Switch to "Select" tool
-   - Click and drag to select multiple cells
-   - Use Copy, Rotate, and Paste buttons to manipulate selections
+# Start development server
+npm start
+```
 
-6. **Save Your Work**:
-   - Click "Save Design" to download your pattern as a JSON file
-   - Use "Load Design" to import previously saved patterns
+### GitHub Pages Deployment
+```bash
+# Run the deployment script
+./deploy.sh
+```
 
-## Controls
+## 📖 How to Use
 
-- **Mouse**: Click to fill cells or select areas
-- **Drag**: Select multiple cells when in select mode
-- **Color Picker**: Choose solid colors
-- **File Upload**: Add custom patterns from images
+1. **Choose Your Tool**: Select from fill tools (squares, triangles) or selection tools
+2. **Pick Colors**: Use the color picker or press `C` to cycle through ROYGBIV
+3. **Design**: Click on grid cells to place shapes
+4. **Select & Manipulate**: 
+   - Press `Cmd+S` to enter selection mode
+   - Click and drag to select areas
+   - Use `Cmd+C` to copy, `Cmd+V` to paste
+   - Press `Cmd+R` to rotate selections
+5. **Fine-tune**: Adjust rotation and position for perfect placement
 
-## Browser Compatibility
+## 🎯 Perfect For
 
-This app works in all modern browsers that support:
-- HTML5 Canvas
-- ES6 Classes
-- File API
-- CSS Grid and Flexbox
+- **Quilters**: Plan complex quilt patterns before cutting fabric
+- **Designers**: Create geometric patterns and tessellations
+- **Educators**: Teach geometry and pattern design
+- **Artists**: Explore color theory and composition
 
-## Technical Details
+## 🛠️ Technical Details
 
-- Built with vanilla JavaScript (no frameworks)
-- Uses HTML5 Canvas for rendering
-- Responsive design that works on desktop and mobile
-- Local file storage for saving/loading designs
+- **Frontend**: Vanilla JavaScript, HTML5 Canvas, CSS3
+- **Deployment**: GitHub Pages
+- **Browser Support**: Modern browsers with Canvas support
+- **Responsive**: Works on desktop and tablet devices
 
-## License
+## 📁 Project Structure
 
-MIT License - feel free to use and modify as needed.
+```
+quilting-grid-planner/
+├── index.html          # Main application page
+├── script.js           # Core application logic
+├── styles.css          # Styling and layout
+├── package.json        # Dependencies and scripts
+├── deploy.sh           # GitHub Pages deployment script
+└── README.md           # This file
+```
 
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+This project is open source and available under the [MIT License](LICENSE).
+
+## 🙏 Acknowledgments
+
+Built with ❤️ for the quilting community. Special thanks to all the quilters who inspired this tool!
+
+---
+
+**Happy Quilting!** 🧵✨
