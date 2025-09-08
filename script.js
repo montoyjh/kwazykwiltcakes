@@ -36,6 +36,10 @@ class QuiltingGridPlanner {
         
         this.grid = this.initializeGrid();
         this.setupEventListeners();
+        
+        // Load saved state from localStorage
+        this.loadState();
+        
         this.drawGrid();
     }
 
@@ -61,6 +65,7 @@ class QuiltingGridPlanner {
             this.grid = this.initializeGrid();
             this.updateCanvasSize();
             this.drawGrid();
+            this.saveState(); // Auto-save after resizing grid
         });
 
         // Tool selection
@@ -138,12 +143,23 @@ class QuiltingGridPlanner {
         });
 
         document.getElementById('save-design').addEventListener('click', () => {
-            this.saveDesign();
+            this.saveDesignToFile();
         });
 
         document.getElementById('load-design').addEventListener('click', () => {
-            this.loadDesign();
+            document.getElementById('load-file-input').click();
         });
+
+        // File input for loading designs
+        const loadFileInput = document.createElement('input');
+        loadFileInput.type = 'file';
+        loadFileInput.accept = '.json';
+        loadFileInput.id = 'load-file-input';
+        loadFileInput.style.display = 'none';
+        loadFileInput.addEventListener('change', (e) => {
+            this.loadDesignFromFile(e.target.files[0]);
+        });
+        document.body.appendChild(loadFileInput);
 
         // Canvas events
         this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
@@ -246,7 +262,7 @@ class QuiltingGridPlanner {
             this.justFinishedSelection = true; // Prevent click event from interfering
             // Finalize the selection
             this.updateSelection();
-            this.updateSelectionButtons();
+            this.updateSelectionButtons()e
             console.log('Selection finalized:', { 
                 selectedCells: this.selectedCells.size,
                 cells: Array.from(this.selectedCells)
@@ -399,6 +415,163 @@ class QuiltingGridPlanner {
         console.log('Tool set to:', tool);
     }
 
+    saveState() {
+        const state = {
+            grid: this.grid,
+            gridWidth: this.gridWidth,
+            gridHeight: this.gridHeight,
+            currentTool: this.currentTool,
+            currentColor: this.currentColor,
+            currentRotation: this.currentRotation,
+            currentPosition: this.currentPosition,
+            lastTool: this.lastTool,
+            currentColorIndex: this.currentColorIndex,
+            timestamp: Date.now()
+        };
+        
+        try {
+            localStorage.setItem('quiltingGridPlanner', JSON.stringify(state));
+            console.log('State saved to localStorage');
+        } catch (error) {
+            console.warn('Failed to save state to localStorage:', error);
+        }
+    }
+
+    loadState() {
+        try {
+            const savedState = localStorage.getItem('quiltingGridPlanner');
+            if (savedState) {
+                const state = JSON.parse(savedState);
+                
+                // Restore grid dimensions
+                if (state.gridWidth && state.gridHeight) {
+                    this.gridWidth = state.gridWidth;
+                    this.gridHeight = state.gridHeight;
+                    document.getElementById('grid-width').value = this.gridWidth;
+                    document.getElementById('grid-height').value = this.gridHeight;
+                    this.updateCanvasSize();
+                }
+                
+                // Restore grid data
+                if (state.grid) {
+                    this.grid = state.grid;
+                }
+                
+                // Restore tool settings
+                if (state.currentTool) {
+                    this.currentTool = state.currentTool;
+                }
+                if (state.currentColor) {
+                    this.currentColor = state.currentColor;
+                    document.getElementById('color-input').value = this.currentColor;
+                }
+                if (state.currentRotation !== undefined) {
+                    this.currentRotation = state.currentRotation;
+                }
+                if (state.currentPosition) {
+                    this.currentPosition = state.currentPosition;
+                }
+                if (state.lastTool) {
+                    this.lastTool = state.lastTool;
+                }
+                if (state.currentColorIndex !== undefined) {
+                    this.currentColorIndex = state.currentColorIndex;
+                }
+                
+                // Update UI to reflect restored state
+                this.updateShapeButtons();
+                this.updateRotationButtons();
+                this.updatePositionButtons();
+                
+                const timeAgo = Math.floor((Date.now() - state.timestamp) / 1000 / 60);
+                console.log(`State loaded from localStorage (saved ${timeAgo} minutes ago)`);
+            }
+        } catch (error) {
+            console.warn('Failed to load state from localStorage:', error);
+        }
+    }
+
+    saveDesignToFile() {
+        const state = {
+            grid: this.grid,
+            gridWidth: this.gridWidth,
+            gridHeight: this.gridHeight,
+            currentTool: this.currentTool,
+            currentColor: this.currentColor,
+            currentRotation: this.currentRotation,
+            currentPosition: this.currentPosition,
+            lastTool: this.lastTool,
+            currentColorIndex: this.currentColorIndex,
+            timestamp: Date.now(),
+            version: '1.0'
+        };
+
+        const dataStr = JSON.stringify(state, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `quilting-design-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        
+        console.log('Design saved to file');
+    }
+
+    loadDesignFromFile(file) {
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const state = JSON.parse(e.target.result);
+                
+                // Validate the file format
+                if (!state.grid || !state.gridWidth || !state.gridHeight) {
+                    alert('Invalid design file format');
+                    return;
+                }
+
+                // Restore grid dimensions
+                this.gridWidth = state.gridWidth;
+                this.gridHeight = state.gridHeight;
+                document.getElementById('grid-width').value = this.gridWidth;
+                document.getElementById('grid-height').value = this.gridHeight;
+                this.updateCanvasSize();
+
+                // Restore grid data
+                this.grid = state.grid;
+
+                // Restore tool settings if available
+                if (state.currentTool) this.currentTool = state.currentTool;
+                if (state.currentColor) {
+                    this.currentColor = state.currentColor;
+                    document.getElementById('color-input').value = this.currentColor;
+                }
+                if (state.currentRotation !== undefined) this.currentRotation = state.currentRotation;
+                if (state.currentPosition) this.currentPosition = state.currentPosition;
+                if (state.lastTool) this.lastTool = state.lastTool;
+                if (state.currentColorIndex !== undefined) this.currentColorIndex = state.currentColorIndex;
+
+                // Update UI
+                this.updateShapeButtons();
+                this.updateRotationButtons();
+                this.updatePositionButtons();
+                this.clearSelection();
+                this.drawGrid();
+
+                // Save to localStorage as well
+                this.saveState();
+
+                console.log('Design loaded from file');
+                alert('Design loaded successfully!');
+            } catch (error) {
+                console.error('Failed to load design file:', error);
+                alert('Failed to load design file. Please check the file format.');
+            }
+        };
+        reader.readAsText(file);
+    }
+
     updateRotationButtons() {
         // Remove active class from all rotation buttons
         document.querySelectorAll('.rotation-btn').forEach(btn => {
@@ -445,6 +618,7 @@ class QuiltingGridPlanner {
         this.grid[y][x].elements.push(newElement);
 
         this.drawGrid();
+        this.saveState(); // Auto-save after filling cell
     }
 
     updateSelection() {
@@ -579,6 +753,7 @@ class QuiltingGridPlanner {
         this.selectedCells = newSelectedCells;
         this.updateSelectionButtons();
         this.drawGrid();
+        this.saveState(); // Auto-save after rotating
         console.log('Rotated selection');
     }
 
@@ -619,6 +794,7 @@ class QuiltingGridPlanner {
         this.isPasting = false;
         this.canvas.style.cursor = 'crosshair';
         this.drawGrid();
+        this.saveState(); // Auto-save after pasting
         console.log('Pasted selection at:', targetCell);
     }
 
@@ -626,12 +802,14 @@ class QuiltingGridPlanner {
         this.grid = this.initializeGrid();
         this.clearSelection();
         this.drawGrid();
+        this.saveState(); // Auto-save after clearing grid
     }
 
     clearCell(x, y) {
         if (x < 0 || x >= this.gridWidth || y < 0 || y >= this.gridHeight) return;
         this.grid[y][x].elements = [];
         this.drawGrid();
+        this.saveState(); // Auto-save after clearing cell
     }
 
     selectSingleCell(x, y) {
