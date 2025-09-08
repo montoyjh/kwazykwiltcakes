@@ -36,15 +36,21 @@
                         <button class="tool-btn" data-tool="third-triangle">Third Triangle</button>
                         <button class="tool-btn" data-tool="clear-cell">Clear Cell</button>
                     </div>
+                    <div class="tool-hint">
+                        <small>Press <kbd>S</kbd> to cycle through shapes</small>
+                    </div>
                 </div>
 
                 <div class="tool-section">
                     <h3>Rotation</h3>
                     <div class="tool-buttons horizontal">
-                        <button class="tool-btn active" id="rotate-0" data-rotation="0">0°</button>
-                        <button class="tool-btn" id="rotate-90" data-rotation="90">90°</button>
-                        <button class="tool-btn" id="rotate-180" data-rotation="180">180°</button>
-                        <button class="tool-btn" id="rotate-270" data-rotation="270">270°</button>
+                        <button class="tool-btn rotation-btn active" id="rotate-0" data-rotation="0">0°</button>
+                        <button class="tool-btn rotation-btn" id="rotate-90" data-rotation="90">90°</button>
+                        <button class="tool-btn rotation-btn" id="rotate-180" data-rotation="180">180°</button>
+                        <button class="tool-btn rotation-btn" id="rotate-270" data-rotation="270">270°</button>
+                    </div>
+                    <div class="tool-hint">
+                        <small>Press <kbd>R</kbd> to cycle rotations</small>
                     </div>
                 </div>
 
@@ -71,6 +77,9 @@
                         <button id="upload-pattern">Upload Pattern</button>
                     </div>
                     <div class="pattern-preview" id="pattern-preview"></div>
+                    <div class="tool-hint">
+                        <small>Press <kbd>C</kbd> to cycle through ROYGBIV colors</small>
+                    </div>
                 </div>
 
                 <div class="tool-section">
@@ -84,6 +93,8 @@
                     </div>
                     <div class="tool-hint">
                         <small>Click to select single cell, drag to select area</small>
+                        <br>
+                        <small><kbd>Cmd+S</kbd> toggle select • <kbd>Cmd+C</kbd> copy • <kbd>Cmd+V</kbd> paste • <kbd>Cmd+R</kbd> rotate selection</small>
                     </div>
                 </div>
 

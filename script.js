@@ -10,6 +10,19 @@ class QuiltingGridPlanner {
         this.currentPattern = null;
         this.currentRotation = 0;
         this.currentPosition = 'top-left';
+        
+        // ROYGBIV color palette
+        this.colorPalette = [
+            '#ff0000', // Red
+            '#ff8c00', // Orange
+            '#ffff00', // Yellow
+            '#00ff00', // Green
+            '#0000ff', // Blue
+            '#4b0082', // Indigo
+            '#9400d3'  // Violet
+        ];
+        this.currentColorIndex = 0;
+        this.lastTool = 'whole-square'; // Track the last non-selection tool
         this.isSelecting = false;
         this.selectionStart = null;
         this.selectionEnd = null;
@@ -81,6 +94,8 @@ class QuiltingGridPlanner {
         // Color picker
         document.getElementById('color-input').addEventListener('change', (e) => {
             this.currentColor = e.target.value;
+            // Update color index to match the selected color (or -1 if not in palette)
+            this.currentColorIndex = this.colorPalette.indexOf(this.currentColor);
         });
 
         // Pattern upload
@@ -141,6 +156,9 @@ class QuiltingGridPlanner {
             this.mousePos = null;
             this.drawGrid();
         });
+
+        // Add keyboard event listeners
+        document.addEventListener('keydown', (e) => this.handleKeyDown(e));
     }
 
     updateCanvasSize() {
@@ -177,27 +195,18 @@ class QuiltingGridPlanner {
         const x = Math.floor((e.clientX - rect.left) / this.cellSize);
         const y = Math.floor((e.clientY - rect.top) / this.cellSize);
         
-        // Only log when using select tool to reduce noise
-        if (this.currentTool === 'select') {
-            console.log('Mouse event:', {
-                clientX: e.clientX,
-                clientY: e.clientY,
-                rectLeft: rect.left,
-                rectTop: rect.top,
-                cellSize: this.cellSize,
-                calculatedX: x,
-                calculatedY: y
-            });
-        }
         
         return { x, y };
     }
 
     handleMouseDown(e) {
         const cell = this.getCellFromMouseEvent(e);
-        console.log('handleMouseDown - cell:', cell, 'currentTool:', this.currentTool);
+        console.log('handleMouseDown - cell:', cell, 'currentTool:', this.currentTool, 'isPasting:', this.isPasting);
         
-        if (this.currentTool === 'select') {
+        if (this.isPasting) {
+            console.log('Attempting to paste at cell:', cell);
+            this.pasteSelection(cell);
+        } else if (this.currentTool === 'select') {
             console.log('=== SELECTION STARTING ===');
             // Clear previous selection when starting new one
             this.clearSelection();
@@ -213,8 +222,6 @@ class QuiltingGridPlanner {
                 cellY: cell.y
             });
             this.drawGrid(); // Redraw to show selection start
-        } else if (this.isPasting) {
-            this.pasteSelection(cell);
         } else {
             // Fill cell immediately on mouse down for better responsiveness
             this.fillCell(cell.x, cell.y);
@@ -228,7 +235,6 @@ class QuiltingGridPlanner {
         if (this.isSelecting && this.selectionStart) {
             this.selectionEnd = { x: cell.x, y: cell.y };
             this.updateSelection();
-            console.log('Selection updated:', { isSelecting: this.isSelecting, start: this.selectionStart, end: this.selectionEnd });
         }
         
         this.drawGrid();
@@ -260,6 +266,163 @@ class QuiltingGridPlanner {
         
         // Reset the flag after handling the click
         this.justFinishedSelection = false;
+    }
+
+    handleKeyDown(e) {
+        // Only handle hotkeys if not typing in an input field
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            return;
+        }
+
+        // Handle Command/Ctrl + C for copy
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'c') {
+            e.preventDefault();
+            if (this.selectedCells.size > 0) {
+                this.copySelection();
+                console.log('Copied selection via Cmd+C');
+            }
+            return;
+        }
+
+        // Handle Command/Ctrl + V for paste
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'v') {
+            e.preventDefault();
+            if (this.copiedSelection) {
+                this.startPasting();
+                console.log('Started pasting via Cmd+V');
+            }
+            return;
+        }
+
+        // Handle Command/Ctrl + S for toggle selection mode
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+            e.preventDefault();
+            if (this.currentTool === 'select') {
+                // Exit selection mode, return to last tool
+                this.setTool(this.lastTool);
+                console.log('Exited selection mode, returned to:', this.lastTool);
+            } else {
+                // Enter selection mode, save current tool
+                this.lastTool = this.currentTool;
+                this.setTool('select');
+                console.log('Entered selection mode via Cmd+S, saved tool:', this.lastTool);
+            }
+            return;
+        }
+
+        // Handle Command/Ctrl + R for rotate selection
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'r') {
+            e.preventDefault();
+            if (this.selectedCells.size > 0) {
+                this.rotateSelection();
+                console.log('Rotated selection via Cmd+R');
+            }
+            return;
+        }
+
+        switch (e.key.toLowerCase()) {
+            case 'r':
+                e.preventDefault();
+                this.cycleRotation();
+                break;
+            case 's':
+                e.preventDefault();
+                this.cycleShape();
+                break;
+            case 'c':
+                e.preventDefault();
+                this.cycleColor();
+                break;
+        }
+    }
+
+    cycleRotation() {
+        const rotations = [0, 90, 180, 270];
+        const currentIndex = rotations.indexOf(this.currentRotation);
+        const nextIndex = (currentIndex + 1) % rotations.length;
+        this.currentRotation = rotations[nextIndex];
+        
+        // Update the UI to reflect the new rotation
+        this.updateRotationButtons();
+        // Redraw to update the mouseover preview
+        this.drawGrid();
+        console.log('Rotation cycled to:', this.currentRotation + '°');
+    }
+
+    cycleShape() {
+        const shapes = [
+            'whole-square',
+            'half-square',
+            'third-square',
+            'whole-triangle',
+            'half-triangle',
+            'third-triangle',
+            'clear-cell'
+        ];
+        const currentIndex = shapes.indexOf(this.currentTool);
+        const nextIndex = (currentIndex + 1) % shapes.length;
+        this.currentTool = shapes[nextIndex];
+        
+        // Update lastTool when cycling through shapes
+        this.lastTool = this.currentTool;
+        
+        // Update the UI to reflect the new shape
+        this.updateShapeButtons();
+        // Redraw to update the mouseover preview
+        this.drawGrid();
+        console.log('Shape cycled to:', this.currentTool);
+    }
+
+    cycleColor() {
+        this.currentColorIndex = (this.currentColorIndex + 1) % this.colorPalette.length;
+        this.currentColor = this.colorPalette[this.currentColorIndex];
+        
+        // Update the color picker input to reflect the new color
+        const colorInput = document.getElementById('color-input');
+        if (colorInput) {
+            colorInput.value = this.currentColor;
+        }
+        
+        // Redraw to update the mouseover preview
+        this.drawGrid();
+        console.log('Color cycled to:', this.currentColor);
+    }
+
+    setTool(tool) {
+        this.currentTool = tool;
+        // Update lastTool when switching to non-selection tools
+        if (tool !== 'select') {
+            this.lastTool = tool;
+        }
+        this.updateShapeButtons();
+        this.drawGrid();
+        console.log('Tool set to:', tool);
+    }
+
+    updateRotationButtons() {
+        // Remove active class from all rotation buttons
+        document.querySelectorAll('.rotation-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // Add active class to current rotation button
+        const rotationBtn = document.querySelector(`[data-rotation="${this.currentRotation}"]`);
+        if (rotationBtn) {
+            rotationBtn.classList.add('active');
+        }
+    }
+
+    updateShapeButtons() {
+        // Remove active class from all shape buttons
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // Add active class to current shape button
+        const shapeBtn = document.querySelector(`[data-tool="${this.currentTool}"]`);
+        if (shapeBtn) {
+            shapeBtn.classList.add('active');
+        }
     }
 
     fillCell(x, y) {
@@ -363,6 +526,7 @@ class QuiltingGridPlanner {
             bounds: { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity }
         };
 
+        // Collect the current selection data
         this.selectedCells.forEach(cellKey => {
             const [x, y] = cellKey.split(',').map(Number);
             selectionData.cells.push({
@@ -382,10 +546,16 @@ class QuiltingGridPlanner {
         const centerX = (selectionData.bounds.minX + selectionData.bounds.maxX) / 2;
         const centerY = (selectionData.bounds.minY + selectionData.bounds.maxY) / 2;
 
+        // Clear the original cells
+        selectionData.cells.forEach(cell => {
+            this.grid[cell.y][cell.x].elements = [];
+        });
+
         // Clear current selection
         this.clearSelection();
 
-        // Rotate each cell 90 degrees clockwise
+        // Rotate each cell 90 degrees clockwise and place in new location
+        const newSelectedCells = new Set();
         selectionData.cells.forEach(cell => {
             const relativeX = cell.x - centerX;
             const relativeY = cell.y - centerY;
@@ -393,18 +563,33 @@ class QuiltingGridPlanner {
             const newY = Math.round(centerY + relativeX);
 
             if (newX >= 0 && newX < this.gridWidth && newY >= 0 && newY < this.gridHeight) {
-                this.grid[newY][newX] = { ...cell.data };
+                // Rotate each element within the cell by 90 degrees
+                const rotatedElements = cell.data.elements.map(element => ({
+                    ...element,
+                    rotation: (element.rotation + 90) % 360
+                }));
+                
+                // Add the rotated elements to the new cell
+                this.grid[newY][newX].elements.push(...rotatedElements);
+                newSelectedCells.add(`${newX},${newY}`);
             }
         });
 
+        // Update selection to the new rotated area
+        this.selectedCells = newSelectedCells;
+        this.updateSelectionButtons();
         this.drawGrid();
         console.log('Rotated selection');
     }
 
     startPasting() {
-        if (!this.copiedSelection) return;
+        if (!this.copiedSelection) {
+            console.log('No copied selection to paste');
+            return;
+        }
         this.isPasting = true;
         this.canvas.style.cursor = 'copy';
+        console.log('Started pasting mode. Click on the grid to paste the selection.');
     }
 
     pasteSelection(targetCell) {
@@ -413,13 +598,21 @@ class QuiltingGridPlanner {
         const offsetX = targetCell.x - this.copiedSelection.bounds.minX;
         const offsetY = targetCell.y - this.copiedSelection.bounds.minY;
 
+        console.log('Pasting selection:', {
+            targetCell,
+            offsetX,
+            offsetY,
+            copiedSelection: this.copiedSelection
+        });
+
         this.copiedSelection.cells.forEach(cell => {
             const newX = cell.x + offsetX;
             const newY = cell.y + offsetY;
 
             if (newX >= 0 && newX < this.gridWidth && newY >= 0 && newY < this.gridHeight) {
-                // Replace the entire cell with the copied data
-                this.grid[newY][newX] = { ...cell.data };
+                // Add the copied elements to the target cell
+                this.grid[newY][newX].elements.push(...cell.data.elements);
+                console.log(`Pasted cell at (${newX}, ${newY}) with ${cell.data.elements.length} elements`);
             }
         });
 
@@ -549,13 +742,6 @@ class QuiltingGridPlanner {
         const shouldDrawSelection = (this.isSelecting && this.selectionStart && this.selectionEnd) || 
             (this.selectedCells.size > 0 && this.selectionStart && this.selectionEnd);
         
-        console.log('Selection drawing check:', {
-            isSelecting: this.isSelecting,
-            selectedCellsSize: this.selectedCells.size,
-            selectionStart: this.selectionStart,
-            selectionEnd: this.selectionEnd,
-            shouldDrawSelection: shouldDrawSelection
-        });
         
         if (shouldDrawSelection) {
             const startX = Math.min(this.selectionStart.x, this.selectionEnd.x);
@@ -578,8 +764,6 @@ class QuiltingGridPlanner {
             this.ctx.setLineDash([8, 4]);
             this.ctx.strokeRect(rectX, rectY, rectWidth, rectHeight);
             this.ctx.setLineDash([]);
-            
-            console.log('Drawing selection rectangle:', { rectX, rectY, rectWidth, rectHeight });
         }
 
         // Draw mouseover preview
